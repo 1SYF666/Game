@@ -7,7 +7,16 @@
 
 #include <string.h>
 #include <stdio.h>
-
+enum Option
+{
+	EXIT,
+	ADD,
+	DEL,
+	SEARCH,
+	MODIFY,
+	SHOW,
+	SORT
+};
 struct PeoInfo
 {
 	char name[NAME];

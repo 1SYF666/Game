@@ -53,4 +53,96 @@ void ShowContact(struct Contact* ps)
 		}
 	}
 }
-void 
+//static修饰局部变量以及局部函数
+
+static int FindByname(struct Contact* ps, char name[NAME])
+{
+	int i = 0;
+    for (i = 0; i < ps->size ; i++)
+    {
+	    if (0 == strcmp(ps->data[i].name, name))
+		{
+			return i;
+		}
+    }
+	return -1;//找不到情况
+}
+
+void DelContact(struct Contact* ps)
+{
+	char name[NAME];
+	printf("请输入要删除人的名字：>");
+	scanf("%s", name);
+	//1.查找要删除人的所在位置
+	//找到了返回所在数组元素的下标
+	//找不到返回-1；
+	int pos=FindByname(ps, name);
+	//int i = 0;
+	//for (i = 0; i < ps->size ; i++)
+	//{
+	//	if (0 == strcmp(ps->data[i].name, name))
+	//	{
+	//		break;
+	//	}
+	//}
+	//2.删除
+	if (pos == -1)
+	{
+		printf("要删除的人不存在\n");
+	}
+	else
+	{
+		//删除数据
+		int j = 0;
+		for (j = pos; j < ps->size-1 ; j++)
+		{
+			ps->data[j] = ps->data[j + 1];
+		}
+		ps->size--;
+		printf("删除成功\n");
+	}
+}
+
+
+void SearchContact(struct Contact* ps)
+{
+	//1.查找人所在的位置
+	char name[NAME];
+	printf("请输入要查找人的名字：>");
+	scanf("%s", name);
+	//int i = 0;
+	//for (i = 0; i < ps->size; i++)
+	//{
+	//	if (0 == strcmp(ps->data[i].name, name))
+	//	{
+	//		break;
+	//	}
+	//}
+	int pos = FindByname(ps, name);
+	if (pos == -1)
+	{
+		printf("要查找的人不存在\n");
+	}
+	else
+	{
+		//打印数据
+		printf("%-20s\t%-4s\t%-5s\t%-12s\t%-20s\n", "名字", "年龄", "性别", "电话", "地址");
+		printf("%-20s\t%-4d\t%-5s\t%-12s\t%-20s\n",
+				ps->data[pos].name,
+				ps->data[pos].age,
+				ps->data[pos].sex,
+				ps->data[pos].tele,
+				ps->data[pos].addr);
+	}
+}
+
+void ModifyContact(struct Contact* ps)
+{
+	char name[NAME];
+	printf("请输入要修改人的名字：>");
+	scanf("%s", name);
+
+
+}
+
+

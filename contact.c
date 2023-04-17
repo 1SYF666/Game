@@ -141,8 +141,27 @@ void ModifyContact(struct Contact* ps)
 	char name[NAME];
 	printf("请输入要修改人的名字：>");
 	scanf("%s", name);
+	int pos = FindByname(ps, name);
+	if (pos == -1)
+	{
+		printf("要修改的人不存在\n");
+	}
+	else
+	{
+		printf("请输入名字:>");
+		scanf("%s", ps->data[pos].name);
+		printf("请输入年龄:>");
+		scanf("%d", &ps->data[pos].age);//注意，这里必须取地址，因为age是整型，与前面数组不同
+		printf("请输入性别:>");
+		scanf("%s", ps->data[pos].sex);
+		printf("请输入电话:>");
+		scanf("%s", ps->data[pos].tele);
+		printf("请输入地址:>");
+		scanf("%s", ps->data[pos].addr);
 
+		printf("修改成功\n");
 
+	}
 }
 
 

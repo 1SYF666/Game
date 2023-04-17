@@ -31,6 +31,12 @@ void InitContact(struct Contact* ps);
 void AddContact(struct Contact* ps);
 void ShowContact(struct Contact* ps);
 
+//删除指定的联系人
+void DelContact(struct Contact* ps);
+//查找指定人的信息
+void SearchContact(const struct Contact* ps);
+void ModifyContact(struct Contact* ps);
+
 
 
 

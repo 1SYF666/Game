@@ -22,6 +22,7 @@
 
 clear ;
 close all;
+clc;
 format long;
 
 %%% 程序主体
@@ -34,6 +35,7 @@ fre_carrier = 4000;
 %% 信源
 % 随机信号
 % msg_source = randint(1,1000);
+% randi(10,100,1); % 从1开始到10，100行1列
 msg_source = [ones(1,20) zeros(1,20) randi([0,1],1,960)];     % 给出标志性的帧头，方便调试
 % 通常帧头会采用扩频序列，为了方便调试，可以采用全1和全0
 
@@ -45,10 +47,10 @@ msg_source = [ones(1,20) zeros(1,20) randi([0,1],1,960)];     % 给出标志性�
 
 %%% 调制器
 % 双极性变换
-bipolar_msg_source = 2*msg_source-1;
+bipolar_msg_source = 2*msg_source-1;      % 相位0-pi
 
 %%% 滤波器
-% rcosfit   滚降成型滤波
+% rcosfit   滚降成型滤波 --- 最佳接收
 rcos_msg_source = rcosflt(bipolar_msg_source,1000,16000);
 % Roll-off factor 为0.5
 
@@ -61,6 +63,22 @@ title("时域波形");
 
 figure(2);
 plot(fft_rcos_msg_source);
+title("频域波形");
+
+
+aaa = 1;        % 调试断点
+%%% 载波发送
+time = 1:length(rcos_msg_source);
+rcos_msg_source_carrier = rcos_msg_source.*cos(2*pi*fre_carrier.*time/fre_sample);
+
+% 频域观察
+fft_rcos_msg_source_carrier = abs(fft(rcos_msg_source_carrier));
+
+figure(3);
+plot(rcos_msg_source_carrier);
+title("时域波形");
+figure(4);
+plot(fft_rcos_msg_source_carrier);
 title("频域波形");
 
 

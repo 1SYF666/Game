@@ -51,7 +51,8 @@ bipolar_msg_source = 2*msg_source-1;      % 相位0-pi
 
 %%% 滤波器
 % rcosfit   滚降成型滤波 --- 最佳接收
-rcos_msg_source = rcosflt(bipolar_msg_source,1000,16000);
+rcos_msg_source1 = rcosflt(bipolar_msg_source,1000,16000);
+rcos_msg_source = rcos_msg_source1';
 % Roll-off factor 为0.5
 
 % 频域观察
@@ -74,12 +75,52 @@ rcos_msg_source_carrier = rcos_msg_source.*cos(2*pi*fre_carrier.*time/fre_sample
 % 频域观察
 fft_rcos_msg_source_carrier = abs(fft(rcos_msg_source_carrier));
 
-figure(3);
-plot(rcos_msg_source_carrier);
-title("时域波形");
-figure(4);
-plot(fft_rcos_msg_source_carrier);
-title("频域波形");
+% figure(3);plot(rcos_msg_source_carrier);title("时域波形");
+ 
+% figure(4);plot(fft_rcos_msg_source_carrier);title("频域波形");
+
+
+
+aaa = 1;        % 调试断点
+
+%% 信道
+
+snr = 10;       % 设置信噪比
+
+%%% 高斯白噪声信道
+
+rcos_msg_source_carrier_noise = awgn(rcos_msg_source_carrier,snr,'measured');
+
+%%% 瑞利信道
+
+
+%% 接收机
+
+%%% 解调器
+% 载波恢复 -- 生成本地载波
+rcos_msg_source_noise = ....
+rcos_msg_source_carrier_noise.*cos(2*pi*fre_carrier.*time/fre_sample);
+
+% 滤波高频，保留基带信号
+LPF_fir128 = fir1(128,0.2);     % 生成低通滤波器
+rcos_msg_source_LP = filter(LPF_fir128,1,rcos_msg_source_noise);
+% 延迟64个采样点输出
+% figure(5);plot(rcos_msg_source_LP);title('时域波形');
+
+% figure(6);plot(abs(fft(rcos_msg_source_LP)));title('频域波形');
+
+% 生成匹配滤波器
+rolloff_factor = 0.5;       % 滚降因子
+rcos_fir = rcosdesign(rolloff_factor,6,symbol_sample_rate);
+% 生成匹配滤波器 a squre root raised cosine FIR filter with rolloff factor
+
+% 滤波
+% filter
+rcos_msg_source_MF = filter( rcos_fir, 1, rcos_msg_source_LP );
+
+% figure(7);plot(rcos_msg_source_MF,'-*');title('时域波形');
+% 
+% figure(8);plot(abs(fft(rcos_msg_source_MF)),'-*');title('频域波形');
 
 
 

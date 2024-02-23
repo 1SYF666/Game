@@ -24,11 +24,12 @@ clear ;
 close all;
 clc;
 format long;
-
+tic;
 %%% 程序主体
 %% 系统参数
 
 EbNo = 1:0.25:3;
+% EbNo = 1;
 
 for i = 1 : length(EbNo)
     number_of_frame = 100;          % 仿真的帧数
@@ -143,17 +144,17 @@ for i = 1 : length(EbNo)
         msg_source_MF_option_sign = sign(rcos_msg_source_MF_option);
 
         % 波形观察
-        % figure(13);
-        % plot(msg_source_MF_option_sign,'-*');
-        % title('判决结果');
-        %
-        % eyediagram(rcos_msg_source,symbol_sample_rate);
-        % title('发射端眼图');
-        % eyediagram(rcos_msg_source_MF,symbol_sample_rate);
-        % title('接收端眼图');
-        %
-        % scatterplot(rcos_msg_source(48+1:16:end-48));
-        % title('BPSK星座图');
+%         figure(13);
+%         plot(msg_source_MF_option_sign,'-*');
+%         title('判决结果');
+%         %
+%         eyediagram(rcos_msg_source,symbol_sample_rate);
+%         title('发射端眼图');
+%         eyediagram(rcos_msg_source_MF,symbol_sample_rate);
+%         title('接收端眼图');
+%         %
+%         scatterplot(rcos_msg_source(48+1:16:end-48));
+%         title('BPSK星座图');
 
         %% 信宿
         %%%误码率性能比对
@@ -173,29 +174,3 @@ ylabel('误码率');
 title('不同信噪比下误码率仿真曲线');
 legend('实验曲线','理论曲线');
 grid on;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

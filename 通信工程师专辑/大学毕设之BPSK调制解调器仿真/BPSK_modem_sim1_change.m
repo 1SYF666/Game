@@ -99,7 +99,7 @@ for i = 1 : length(EbNo)
 
         % 比特信噪比
         s_pow = sum(abs(rcos_msg_source_carrier).^2)/length(rcos_msg_source_carrier);
-        attn = s_pow * 10^(-EbNo(i)/10);
+        attn = 0.5 * s_pow * 10^(-EbNo(i)/10);
         attn = sqrt(attn);
         I_noise = randn(1,length(rcos_msg_source_carrier)).* attn;
         rcos_msg_source_carrier_noise = rcos_msg_source_carrier +I_noise;

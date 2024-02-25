@@ -57,9 +57,21 @@ for i = 1 : length(EbNo)
         bipolar_msg_source = 2*msg_source-1;      % 相位0-pi
 
         %%% 滤波器
-        % rcosfit   滚降成型滤波 --- 最佳接收
-        rcos_msg_source1 = rcosflt(bipolar_msg_source,1000,16000);
-        rcos_msg_source = rcos_msg_source1';
+
+        % Roll-off factor 为0.5
+        %%% 另一种写法
+        rolloff_factor = 0.5;       % 滚降因子
+        rcos_fir = rcosdesign(rolloff_factor,6,symbol_sample_rate);
+
+        %%% 插值
+        for k=1:length(bipolar_msg_source)
+            up16_bipolar_msg_source(1+16*(k-1)) = bipolar_msg_source(k);
+            up16_bipolar_msg_source(2+16*(k-1):16*k) = zeros(1,15);
+        end
+
+        %%% 滚降滤波 
+        rcos_msg_source = filter(rcos_fir,1,up16_bipolar_msg_source);
+
 
         % 频域观察
         %fft_rcos_msg_source = abs(fft(rcos_msg_source));

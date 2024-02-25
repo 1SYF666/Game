@@ -61,6 +61,7 @@ for i = 1 : length(EbNo)
         rcos_msg_source1 = rcosflt(bipolar_msg_source,1000,16000);
         rcos_msg_source = rcos_msg_source1';
 
+
         % 频域观察
         %fft_rcos_msg_source = abs(fft(rcos_msg_source));
         % figure(1);plot(rcos_msg_source);title("时域波形");
@@ -77,13 +78,9 @@ for i = 1 : length(EbNo)
 
         %% 信道
 
-        % 比特信噪比
-        s_pow = sum(abs(rcos_msg_source_carrier).^2)/length(rcos_msg_source_carrier);
-        attn = 0.5 * s_pow * 10^(-EbNo(i)/10);
-        attn = sqrt(attn);
-        I_noise = randn(1,length(rcos_msg_source_carrier)).* attn;
-        rcos_msg_source_carrier_noise = rcos_msg_source_carrier +I_noise;
-
+        snr(i) =EbNo(i)-10*log10(0.5*16) ;       % 设置信噪比
+        %%% 高斯白噪声信道
+        rcos_msg_source_carrier_noise = awgn(rcos_msg_source_carrier,snr(i),'measured');
 
 
         %%% 瑞利信道

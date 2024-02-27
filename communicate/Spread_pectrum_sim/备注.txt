@@ -1,0 +1,403 @@
+%%
+% 代码来自微信公众号： 通信工程师专辑
+%%
+function [xh] = func_hrollfcoef(irfn,ipoint,sr,alfs,ncc)
+xi=zeros(1,irfn*ipoint+1);
+
+xq=zeros(1,irfn*ipoint+1);
+
+point = ipoint;
+
+tr = sr ;  
+
+tstp = 1.0 ./ tr ./ ipoint;
+
+n = ipoint .* irfn;
+
+mid = ( n ./ 2 ) + 1;
+
+sub1 = 4.0 .* alfs .* tr;% 4*alpha*R_s
+
+for i = 1 : n 
+
+  icon = i - mid;
+
+  ym = icon;
+
+  if icon == 0.0 
+
+    xt = (1.0-alfs+4.0.*alfs./pi).* tr;  % h(0) 
+
+  else 
+
+    sub2 =16.0.*alfs.*alfs.*ym.*ym./ipoint./ipoint; 
+
+    if sub2 ~= 1.0 
+
+      x1=sin(pi*(1.0-alfs)/ipoint*ym)./pi./(1.0-sub2)./ym./tstp;
+
+      x2=cos(pi*(1.0+alfs)/ipoint*ym)./pi.*sub1./(1.0-sub2);
+
+      xt = x1 + x2;  % h(t) plot((1:length(xh)),xh)
+
+    else % (4alphaRst)^2 = 1plot((1:length(xh)),xh)
+
+      xt = alfs.*tr.*((1.0-2.0/pi).*cos(pi/4.0/alfs)+(1.0+2.0./pi).*sin(pi/4.0/alfs))./sqrt(2.0);
+
+    end  %  if sub2 ~= 1.0 
+
+  end%  if icon == 0.0 
+
+
+
+  if ncc == 0                        % in the case of receiver
+
+    xh( i ) = xt ./ ipoint ./ tr;% normalization
+
+  elseif ncc == 1 % in the case of transmitter
+
+    xh( i ) = xt ./ tr;          % normalization
+
+  else
+
+    error('ncc error');
+
+  end    %  if ncc == 0	
+
+end  % for i = 1 : n 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function [mout] = func_mseq(stg, taps, inidata, n)
+
+
+
+if nargin < 4
+
+    n = 1;
+
+end
+
+
+
+mout = zeros(n,2^stg-1);
+
+fpos = zeros(stg,1);
+
+
+
+fpos(taps) = 1;
+
+
+
+for ii=1:2^stg-1
+
+    
+
+    mout(1,ii) = inidata(stg);                      % storage of the output data
+
+    num        = mod(inidata*fpos,2);               % calculation of the feedback data
+
+    
+
+    inidata(2:stg) = inidata(1:stg-1);              % one shifts the register
+
+    inidata(1)     = num;                           % return feedback data
+
+    
+
+end
+
+
+
+if n > 1
+
+    for ii=2:n
+
+        mout(ii,:) = func_shift(mout(ii-1,:),1,0);
+
+    end
+
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [outregi] = func_shift(inregi,shiftr,shiftu)
+
+[h, v]  = size(inregi);
+
+outregi = inregi;
+shiftr = rem(shiftr,v);
+shiftu = rem(shiftu,h);
+
+
+
+if shiftr > 0
+
+    outregi(:,1       :shiftr) = inregi(:,v-shiftr+1:v       );
+
+    outregi(:,1+shiftr:v     ) = inregi(:,1         :v-shiftr);
+
+elseif shiftr < 0
+
+    outregi(:,1         :v+shiftr) = inregi(:,1-shiftr:v      );
+
+    outregi(:,v+shiftr+1:v       ) = inregi(:,1       :-shiftr);
+
+end
+
+
+
+inregi = outregi;
+
+
+
+if shiftu > 0
+
+    outregi(1         :h-shiftu,:) = inregi(1+shiftu:h,     :);
+
+    outregi(h-shiftu+1:h,       :) = inregi(1       :shiftu,:);
+
+elseif shiftu < 0
+
+    outregi(1       :-shiftu,:) = inregi(h+shiftu+1:h,       :);
+
+    outregi(1-shiftu:h,      :) = inregi(1         :h+shiftu,:);
+
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [iout,qout]=func_qpskmod(paradata,para,nd,ml)
+
+
+
+m2=ml./2;
+
+
+
+paradata2=paradata.*2-1;
+
+count2=0;
+
+
+
+for jj=1:nd
+
+
+
+isi = zeros(para,1);
+
+isq = zeros(para,1);
+
+
+
+for ii = 1 : m2 
+
+  isi = isi + 2.^( m2 - ii ) .* paradata2((1:para),ii+count2);
+
+  isq = isq + 2.^( m2 - ii ) .* paradata2((1:para),m2+ii+count2);
+
+end
+
+
+
+iout((1:para),jj)=isi;
+
+qout((1:para),jj)=isq;
+
+
+
+count2=count2+ml;
+
+
+
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function [demodata]= func_qpskdemod(idata,qdata,para,nd,ml)
+
+
+
+demodata=zeros(para,ml*nd);
+
+demodata((1:para),(1:ml:ml*nd-1))=idata((1:para),(1:nd))>=0;
+
+demodata((1:para),(2:ml:ml*nd))=qdata((1:para),(1:nd))>=0;
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [iout, qout] = func_spread(idata, qdata, code1)
+
+switch nargin
+
+case { 0 , 1 }
+
+    error('lack of input argument');
+
+case 2
+
+    code1 = qdata;
+
+    qdata = idata;
+
+end
+
+
+
+[hn,vn] = size(idata);
+
+[hc,vc] = size(code1);
+
+
+
+if hn > hc
+
+    error('lack of spread code sequences');
+
+end
+
+
+
+iout = zeros(hn,vn*vc);
+
+qout = zeros(hn,vn*vc);
+
+
+
+for ii=1:hn
+
+    iout(ii,:) = reshape(rot90(code1(ii,:),3)*idata(ii,:),1,vn*vc);
+
+    qout(ii,:) = reshape(rot90(code1(ii,:),3)*qdata(ii,:),1,vn*vc);
+
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [iout, qout] = func_despread(idata, qdata, code1)
+
+
+
+switch nargin
+
+case { 0 , 1 }
+
+    error('lack of input argument');
+
+case 2
+
+    code1 = qdata;
+
+    qdata = idata;
+
+end
+
+
+
+[hn,vn] = size(idata);
+
+[hc,vc] = size(code1);
+
+
+
+vn      = fix(vn/vc);
+
+
+
+iout    = zeros(hc,vn);
+
+qout    = zeros(hc,vn);
+
+
+
+for ii=1:hc
+
+    iout(ii,:) = rot90(flipud(rot90(reshape(idata(ii,:),vc,vn)))*rot90(code1(ii,:),3));
+
+    qout(ii,:) = rot90(flipud(rot90(reshape(qdata(ii,:),vc,vn)))*rot90(code1(ii,:),3));
+
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [iout,qout] = func_compoversamp2(iin, qin, sample)
+
+
+
+[h,v] = size(iin);
+
+
+
+iout = zeros(h,v*sample);
+
+qout = zeros(h,v*sample);
+
+
+
+iout(:,1:sample:1+sample*(v-1)) = iin;
+
+qout(:,1:sample:1+sample*(v-1)) = qin;
+
+图片
+
+function [iout, qout] = func_compconv2(idata, qdata, filter)
+
+
+
+iout = conv2(idata,filter);
+
+qout = conv2(qdata,filter);
+
+图片
+
+function [iout, qout] = func_comb2(idata, qdata, attn)
+
+
+
+v = length(idata);
+
+h = length(attn);
+
+
+
+iout = zeros(h,v);
+
+qout = zeros(h,v);
+
+
+
+for ii=1:h
+
+    iout(ii,:) = idata + randn(1,v) * attn(ii);
+
+    qout(ii,:) = qdata + randn(1,v) * attn(ii);
+
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

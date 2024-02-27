@@ -153,7 +153,8 @@ for i = 1 : length(EbNo)
 end
 
 %% 仿真结果
-ber = berawgn(EbNo,'psk',2,'nodiff');
+% ber = berawgn(EbNo,'psk',2,'nodiff');
+ber = 0.5*erfc(sqrt(10.^(EbNo/10)));
 semilogy(EbNo,bit_err_ration_total,'-*',EbNo,ber,'-+');
 xlabel('比特信噪比');
 ylabel('误码率');

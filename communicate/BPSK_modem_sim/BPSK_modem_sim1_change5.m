@@ -163,13 +163,30 @@ for i = 1 : length(EbNo)
 
     err_number_total(i) = sum(err_number)/number_of_frame;
     bit_err_ration_total(i) = sum(bit_err_ration)/number_of_frame;
+    fprintf("第  %d  次循环\n",i);
 end
 
 %% 仿真结果
+figure;
 ber = berawgn(EbNo,'psk',2,'nodiff');
-semilogy(EbNo,bit_err_ration_total,'-*',EbNo,ber,'-+');
+ber1 = 0.5*erfc(sqrt(10.^(EbNo/10)));
+semilogy(EbNo,bit_err_ration_total,'-*',EbNo,ber1,'-+');
 xlabel('比特信噪比');
 ylabel('误码率');
 title('不同信噪比下误码率仿真曲线');
 legend('实验曲线','理论曲线');
 grid on;
+
+figure;
+ber1 = 0.5*erfc(sqrt(10.^(EbNo/10)));
+semilogy(EbNo,ber,'-*',EbNo,ber1,'-+');
+xlabel('比特信噪比');
+ylabel('误码率');
+title('不同信噪比下误码率仿真曲线');
+legend('matlab理论曲线','理论计算公式曲线');
+grid on;
+
+
+
+
+

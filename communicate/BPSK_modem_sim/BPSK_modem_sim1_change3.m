@@ -160,6 +160,7 @@ for i = 1 : length(EbNo)
 
     err_number_total(i) = sum(err_number)/number_of_frame;
     bit_err_ration_total(i) = sum(bit_err_ration)/number_of_frame;
+    fprintf("信噪比 %ddB 执行完毕\n",EbNo(i));
 end
 
 %% 仿真结果

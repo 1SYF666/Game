@@ -20,9 +20,9 @@
 %
 
 
-clear ;
-close all;
-clc;
+% clear ;
+% close all;
+% clc;
 format long;
 tic;
 %%% 程序主体
@@ -89,10 +89,10 @@ for i = 1 : length(EbNo)
         % figure(4);plot(fft_rcos_msg_source_carrier);title("频域波形");
 
         %% 信道
-
+        snr(i) =EbNo(i)-10*log10(0.5*16) ;       % 设置信噪比
         % 比特信噪比
         s_pow = sum(abs(rcos_msg_source).^2)/length(rcos_msg_source);
-        n_pow = s_pow* (symbol_rate/bit_rate)* 10^(-EbNo(i)/10);
+        n_pow = s_pow* (symbol_rate/bit_rate)* 10^(-snr(i)/10);
         attn = sqrt(0.5 * n_pow);
         I_noise = randn(1,length(rcos_msg_source)).* attn;
         rcos_msg_source_carrier_noise = rcos_msg_source_carrier +I_noise;
@@ -163,7 +163,7 @@ for i = 1 : length(EbNo)
 
     err_number_total(i) = sum(err_number)/number_of_frame;
     bit_err_ration_total(i) = sum(bit_err_ration)/number_of_frame;
-    fprintf("第  %d  次循环\n",i);
+    fprintf("信噪比  %ddB 执行完毕\n",EbNo(i));
 end
 
 %% 仿真结果
@@ -177,14 +177,14 @@ title('不同信噪比下误码率仿真曲线');
 legend('实验曲线','理论曲线');
 grid on;
 
-figure;
-ber1 = 0.5*erfc(sqrt(10.^(EbNo/10)));
-semilogy(EbNo,ber,'-*',EbNo,ber1,'-+');
-xlabel('比特信噪比');
-ylabel('误码率');
-title('不同信噪比下误码率仿真曲线');
-legend('matlab理论曲线','理论计算公式曲线');
-grid on;
+% figure;
+% ber1 = 0.5*erfc(sqrt(10.^(EbNo/10)));
+% semilogy(EbNo,ber,'-*',EbNo,ber1,'-+');
+% xlabel('比特信噪比');
+% ylabel('误码率');
+% title('不同信噪比下误码率仿真曲线');
+% legend('matlab理论曲线','理论计算公式曲线');
+% grid on;
 
 
 

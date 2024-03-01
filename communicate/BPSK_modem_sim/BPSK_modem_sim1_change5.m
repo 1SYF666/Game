@@ -20,9 +20,9 @@
 %
 
 
-% clear ;
-% close all;
-% clc;
+clear ;
+close all;
+clc;
 format long;
 tic;
 %%% 程序主体
@@ -89,7 +89,7 @@ for i = 1 : length(EbNo)
         % figure(4);plot(fft_rcos_msg_source_carrier);title("频域波形");
 
         %% 信道
-        snr(i) =EbNo(i)-10*log10(0.5*16) ;       % 设置信噪比
+        snr(i) =EbNo(i)-10*log10(0.5*symbol_sample_rate) ;       % 设置信噪比
         % 比特信噪比
         s_pow = sum(abs(rcos_msg_source).^2)/length(rcos_msg_source);
         n_pow = s_pow* (symbol_rate/bit_rate)* 10^(-snr(i)/10);

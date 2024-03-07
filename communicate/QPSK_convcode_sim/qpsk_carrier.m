@@ -14,11 +14,12 @@ clear;
 sr=256000.0; % Symbol rate
 ml=2;        % ml:Number of modulation levels (BPSK:ml=1, QPSK:ml=2, 16QAM:ml=4)
 br=sr .* ml; % Bit rate
-nd = 1000;   % Number of symbols that simulates in each loop
+nd = 10000;   % Number of symbols that simulates in each loop
 ebn0=-10:8;      % Eb/N0
 IPOINT=8;    % Number of oversamples
 
-fre_carrier = 2000;
+% fre_carrier = 2000;
+fre_carrier = 250490;
 fre_sample = sr*IPOINT;
 
 %************************* Filter initialization ***************************
@@ -54,37 +55,48 @@ for kkk=1:length(ebn0)
     ich2_carrier = ich2.*cos(2*pi*fre_carrier.*time/fre_sample);
     qch2_carrier = qch2.*sin(2*pi*fre_carrier.*time/fre_sample);
     ch2_carrier =  ich2_carrier + 1i * qch2_carrier;
-%     ch2_carrier =  ich2_carrier - qch2_carrier;
-    %%% 
-%         spow=sum(ch2_carrier.*ch2_carrier)/nd;  % sum: built in function
-        spow=sum(ch2_carrier.*ch2_carrier)/length(ch2_carrier);  % sum: built in function
-        attn=0.5*spow*sr/br*10.^(-ebn0(kkk)/10);
-        attn=sqrt(attn);  % sqrt: built in function
 
-    %%%
-        inoise = attn*randn(1,length(ch2_carrier));
-        qnoise = attn*randn(1,length(ch2_carrier));
-
-        ch3_carrier = ch2_carrier + inoise.*cos(2*pi*fre_carrier.*time/fre_sample)-...
-                       1i * (qnoise.*sin(2*pi*fre_carrier.*time/fre_sample));
-        ich3_carrier = real(ch3_carrier);
-        qch3_carrier = imag(ch3_carrier);
-        
-%     %******************** awgn函数加噪 ******************%   
-%         snr(kkk) =ebn0(kkk)+10*log10(br/sr)-10 * log10(0.5 * IPOINT) ; 
-%         ch3_carrier = awgn(ch2_carrier,snr(kkk),'measured');
+% %     %******************** randn函数加噪 ******************% 
+%     %%% 
+% %         spow=sum(ch2_carrier.*ch2_carrier)/nd;  % sum: built in function
+%         spow=sum(ch2_carrier.*ch2_carrier)/length(ch2_carrier);  % sum: built in function
+%         attn=0.5*spow*sr/br*10.^(-ebn0(kkk)/10);
+%         attn=sqrt(attn);  % sqrt: built in function
+% 
+%     %%%
+%         inoise = attn*randn(1,length(ch2_carrier));
+%         qnoise = attn*randn(1,length(ch2_carrier));
+% 
+%         ch3_carrier = ch2_carrier + inoise.*cos(2*pi*fre_carrier.*time/fre_sample)-...
+%                        1i * (qnoise.*sin(2*pi*fre_carrier.*time/fre_sample));
 %         ich3_carrier = real(ch3_carrier);
 %         qch3_carrier = imag(ch3_carrier);
+        
+%     %******************** awgn函数加噪 ******************%   
+        snr(kkk) =ebn0(kkk)+10*log10(br/sr)-10 * log10(IPOINT) ; 
+        ch3_carrier = awgn(ch2_carrier,snr(kkk),'measured');
+        ich3_carrier = real(ch3_carrier);
+        qch3_carrier = imag(ch3_carrier);
         
 
         ich3_carrier2 = ich3_carrier.*cos(2*pi*fre_carrier.*time/fre_sample);
         qch3_carrier2 = qch3_carrier.*sin(2*pi*fre_carrier.*time/fre_sample);
-
+        
+%         figure;plot(abs(fft(ich2)));title('成型前fft效果图');
+%         figure;plot(abs(fft(ich3_carrier)));title('调制后fft效果图');
+%         figure;plot(abs(fft(ich3_carrier2)));title('相干解调后fft效果图');
+        
+        
         % 滤波高频，保留基带信号
         LPF_fir128 = fir1(128,0.2);     % 生成低通滤波器
+        
+%         fvtool(LPF_fir128,'Analysis','impulse'); %将脉冲响应可视化
+%         freqz(LPF_fir128,1);
+        
         ich3 = filter(LPF_fir128,1,ich3_carrier2);
         qch3 = filter(LPF_fir128,1,qch3_carrier2);
         
+%         figure;plot(abs(fft(ich3)));title('相干解调低通滤波后fft效果图');
 
         [ich4,qch4]= compconv(ich3,qch3,xh2);
 
@@ -124,7 +136,7 @@ ber_theory = 0.5*erfc(sqrt(10.^(ebn0/10)));
 semilogy(ebn0,ber,'-*',ebn0,ber_theory,'-+');
 xlabel('比特信噪比');
 ylabel('误码率');
-title('不同信噪比下误码率仿真曲线');
+title('QPSK调制解调不同信噪比下误码率仿真曲线');
 legend('实验曲线','理论曲线');
 grid on;
 

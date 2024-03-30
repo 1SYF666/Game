@@ -237,12 +237,18 @@ for t = 1 : IE
         
         
         %% AWGN Channel
-        tra_real = s_real + sigma * randn(1,length( s_real )); % AWGN channel I
-        tra_imag = s_imag + sigma * randn(1,length( s_imag )); % AWGN channel I
-        tra = tra_real + 1i * tra_imag;  
+%         tra_real = s_real + sigma * randn(1,length( s_real )); % AWGN channel I
+%         tra_imag = s_imag + sigma * randn(1,length( s_imag )); % AWGN channel I
+%         tra = tra_real + 1i * tra_imag;  
     %     tra = awgn(s, EbNodB(t), 'measured');
     %     figure;plot(abs(fft(tra)));
-    
+
+        % 该信噪比加噪方式有问题！ 
+        snr(t) =EbNodB(t)+10*log10(2)-10 * log10(1) ; 
+        ch3 = awgn(s_real + 1i*s_imag,snr(t),'measured');
+        tra_real = real(ch3);
+        tra_imag = imag(ch3);
+        tra = tra_real + 1i * tra_imag;
         %% Demodulate
        
         temp1 = [tra_real;tra_imag];
@@ -460,13 +466,13 @@ end
 
 end
 %% result 
-% figure;
-% % semilogy(EbNodB,BER_sim,'*');grid on;
-% plot(EbNodB,BER_sim,'-ko');grid on;
-% %legend('SC','SCL(32)','SCL-AD-CRC','SCL-CRC(32)','SCL-AD-CRC(LA)','SCL-CRC(32,LA)')
-% title('BLER performance')
-% xlabel('Eb/No');
-% ylabel('BER')
+figure;
+% semilogy(EbNodB,BER_sim,'*');grid on;
+plot(EbNodB,BER_sim,'-ko');grid on;
+%legend('SC','SCL(32)','SCL-AD-CRC','SCL-CRC(32)','SCL-AD-CRC(LA)','SCL-CRC(32,LA)')
+title('BLER performance')
+xlabel('Eb/No');
+ylabel('BER')
 
 % save BER_sim.mat BER_sim;
 % save FER_sim.mat FER_sim;

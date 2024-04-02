@@ -65,414 +65,435 @@ A_temp = [757 565 501 437 245 117];
 flag = 1;  % 测试标志位
 
 for kkkkk=1:length(NAE_temp)
-if flag == 1
-    N = NAE_temp(1,kkkkk);
-    A = NAE_temp(2,kkkkk);
-    E = NAE_temp(3,kkkkk);
-elseif flag == 2
-    N = 1024;
-    A = A_temp(kkkkk);
-    E = 1035; 
-end
-
-crcL = 11;
-crcg = fliplr([1 1 1 0 0 0 1 0 0 0 0 1]); % CRC polynomial
-K = A + crcL;                             % CRC length = crcL
-n = log2(N);
-
-% units
-second = 1;
-KHz = 1e3;
-MHz = 1e6;
-M= 2 ;                                                % QPSK modulation 
-
-Rb = K*KHz;                                           % information bit rate
-Cb = N*KHz;                                           % channel bit rate
-Eb = (E+1)* KHz;
-fs = Eb*16;
-simulation_time = 0.001*second;                       % simulation time---1ms
-simulation_length = M * fs * simulation_time;         % QPSK simlation length  
-
-EbNodB = 0:0.25:3;
-IE = length(EbNodB);
-for t = 1 : IE
-
     if flag == 1
-        Rate = K/N;
+        N = NAE_temp(1,kkkkk);
+        A = NAE_temp(2,kkkkk);
+        E = NAE_temp(3,kkkkk);
     elseif flag == 2
-        Rate = Rate_temp(kkkkk);
+        N = 1024;
+        A = A_temp(kkkkk);
+        E = 1035;
     end
-    EbNo = 10^(EbNodB(t)/10);
-    sigma = sqrt(1/(2*Rate*EbNo));
     
-    rmax = 3; %max received value
-    maxqr = 31; %max integer received value
-    nL = 4; %list size
-    %% ploar Encode
-    Q1 = Q(Q<=N);   %reliability sequence for N
+    crcL = 11;
+    crcg = fliplr([1 1 1 0 0 0 1 0 0 0 0 1]); % CRC polynomial
+    K = A + crcL;                             % CRC length = crcL
+    n = log2(N);
     
-    F = Q1(1:N-K);  %Frozen positions: Q1(1:N-K)
-                    %Message positions: Q1(N-K+1:end)
+    % units
+    second = 1;
+    KHz = 1e3;
+    MHz = 1e6;
+    M= 2 ;                                                % QPSK modulation
     
-    %Simulate
+    Rb = K*KHz;                                           % information bit rate
+    Cb = N*KHz;                                           % channel bit rate
+    Eb = (E+1)* KHz;
+    fs = Eb*16;
+    simulation_time = 0.001*second;                       % simulation time---1ms
+    simulation_length = M * fs * simulation_time;         % QPSK simlation length
     
-    Nbiterrs = 0; Nblkerrs = 0; Nblocks = 50;
-    for blk = 1:Nblocks
-        msg = randi([0 1],1,A); % generate random K-bit message, k is equal to Rb*simulation_time
+    EbNodB = 0:0.25:3;
+    IE = length(EbNodB);
+    for t = 1 : IE
         
-        [quot,rem] = gfdeconv([zeros(1,crcL) fliplr(msg)],crcg);
-        msgcrc = [msg fliplr([rem zeros(1,crcL-length(rem))])];
+        if flag == 1
+            Rate = K/N;
+        elseif flag == 2
+            Rate = Rate_temp(kkkkk);
+        end
+        EbNo = 10^(EbNodB(t)/10);
+        sigma = sqrt(1/(2*Rate*EbNo));
         
-        u = zeros(1,N);
-        u(Q1(N-K+1:end)) = msgcrc; % assign message bits
-        m = 1;                  % number of bits combined
-
-        for d = n-1:-1:0
-            for i = 1:2*m:N
-                a = u(i:i+m-1);                 % first part
-                b = u(i+m:i+2*m-1);             % second part
-                u(i:i+2*m-1) = [mod(a+b,2) b];  % combining
-            end
-            m = m * 2;
-        end
-    
+        rmax = 3; %max received value
+        maxqr = 31; %max integer received value
+        nL = 4; %list size
+        %% ploar Encode
+        Q1 = Q(Q<=N);   %reliability sequence for N
         
-        %% Ratematching
-    
-        P=[0 1 2 4 3 5 6 7 ....
-           8 16 9 17 10 18 11 19....
-           12 20 13 21 14 22 15 23....
-           24 25 26 28 27 29 30 31]+1; % 块交织矩阵，参考ts_138212v150200 5.4.1节
+        F = Q1(1:N-K);  %Frozen positions: Q1(1:N-K)
+        %Message positions: Q1(N-K+1:end)
         
-        % 子块交织
-        L_sub = N / 32;
-        J = zeros(32,L_sub);
-        Y_temp1=zeros(32,L_sub);
-        for j = 1 : 32   % 分块
-            J(j,:) = u(1+L_sub*(j-1):L_sub*j);
-        end
-      
-        for jj= 1 : 32   % 交织
-            Y_temp1(jj,:) = J(P(jj),:);
-        end
-        Y_temp2 = Y_temp1';
-        Y_temp3 = Y_temp2(:);
-        y_sub_inter = Y_temp3';
-    
-        % 比特选择
-    
-        if E >= N       % reptiton
-            y_bit_chosing = [y_sub_inter y_sub_inter(1:E-N)];
-        else 
-    
-        end
-    
-        % 比特交织 45*46/2=1035
+        %Simulate
         
-        % 等直角三角形 边长 45
-        edge_length=findNumberOfTerms(E,1,1);
-        % step 1:按行写入 
-        triangle_matrix = zeros(edge_length, edge_length);
-        sum_matrix = 0;
-        sum_matrix_delay = 0;
-    
-        for row = 1 : edge_length
-            if row == 1
-                matrix_temp(1) = edge_length-row+1;
-                
-                triangle_matrix(row, 1 : matrix_temp(1)) = y_bit_chosing(1:matrix_temp(1));
-                
-                sum_matrix = sum_matrix + matrix_temp(1);  
-            else
-                matrix_temp(row) = edge_length-row+1;  
-                
-                sum_matrix_delay = sum_matrix_delay + matrix_temp(row-1); 
-                sum_matrix = sum_matrix + matrix_temp(row);
-                
-                triangle_matrix(row, 1 : matrix_temp(row)) = y_bit_chosing(1+sum_matrix_delay: sum_matrix);
-            end
-        end
-    
-        % step 2:按列读出    
-    
-        sum_matrix2 = 0;
-        sum_matrix_delay2 = 0;
-        for col = 1 : edge_length
-            if col == 1
-                matrix_temp2(col) = edge_length-col+1;
-    
-                sum_matrix2 = sum_matrix2 + matrix_temp2(col);
-        
-                 y_bit_interleaving(1:sum_matrix2) = triangle_matrix(1:matrix_temp2(col) ,col)';
-            else
-                matrix_temp2(col) = edge_length-col+1;  
-    
-                sum_matrix_delay2 = sum_matrix_delay2 + matrix_temp2(col-1); 
-                sum_matrix2 = sum_matrix2 + matrix_temp2(col);
-                
-                y_bit_interleaving(sum_matrix_delay2+1 : sum_matrix2) = triangle_matrix(1:matrix_temp2(col) ,col)';
-            end
-        end
-        
-        %% Modulate
-    
-        cword = y_bit_interleaving;
-        if 0==mod(E,2)
-            csword1 = cword ;                     % 1035+1=1036
-        else
-            csword1 = [cword 0];                     % 1035+1=1036
-        end
-      
-        s_conversion = 1 - 2 * csword1;          % QPSK bit to symbol conversion
-        
-        kk = 1;
-        for k = 1 : length(s_conversion)
-            if 0 == mod(k,2)
-                s_imag(kk) = s_conversion(k);
-                kk = kk+1;
-            else
-                s_real(kk) = s_conversion(k);
-            end
-        end
-        
-        
-        %% AWGN Channel
-%         tra_real = s_real + sigma * randn(1,length( s_real )); % AWGN channel I
-%         tra_imag = s_imag + sigma * randn(1,length( s_imag )); % AWGN channel I
-%         tra = tra_real + 1i * tra_imag;  
-    %     tra = awgn(s, EbNodB(t), 'measured');
-    %     figure;plot(abs(fft(tra)));
-
-        % 该信噪比加噪方式有问题！ 
-        snr(t) =EbNodB(t)+10*log10(2)-10 * log10(1) ; 
-        ch3 = awgn(s_real + 1i*s_imag,snr(t),'measured');
-        tra_real = real(ch3);
-        tra_imag = imag(ch3);
-        tra = tra_real + 1i * tra_imag;
-        %% Demodulate
-       
-        temp1 = [tra_real;tra_imag];
-        temp2 = temp1(:);
-        output = temp2';
-    
-    %     figure;plot(output);hold on;plot(s_conversion);title("对比");
-    
-    
-
-
-        %% Deratematching
-    
-        if 0==mod(E,2)
-            de_output=output;   % 1036-1 = 1035 
-        else
-            de_output=output(1:end-1);   % 1036-1 = 1035 
-        end
-     
-        % 解比特交织模块
-    
-        % step 1: 按列写入
-        % 思想：仍跟上述交织模块一样按行写入，然后对结果取个转置即为按列写入
-        de_triangle_matrix = zeros(edge_length, edge_length);
-        sum_matrix = 0;
-        sum_matrix_delay = 0;
-    
-        for row = 1 : edge_length
-            if row == 1
-                matrix_temp(1) = edge_length-row+1;
-                
-                de_triangle_matrix(row, 1 : matrix_temp(1)) = de_output(1:matrix_temp(1));
-                
-                sum_matrix = sum_matrix + matrix_temp(1);  
-            else
-                matrix_temp(row) = edge_length-row+1;  
-                
-                sum_matrix_delay = sum_matrix_delay + matrix_temp(row-1); 
-                sum_matrix = sum_matrix + matrix_temp(row);
-                
-                de_triangle_matrix(row, 1 : matrix_temp(row)) = de_output(1+sum_matrix_delay: sum_matrix);
-            end
-        end
-    
-        de_triangle_matrix1 = de_triangle_matrix';
-    
-        % step 2: 按行读出
-        sum_matrix2 = 0;
-        sum_matrix_delay2 = 0;
-        for row = 1 : edge_length
-            if row == 1
-                matrix_temp2(row) = edge_length-row+1;
-    
-                sum_matrix2 = sum_matrix2 + matrix_temp2(row);
-        
-                 de_y_bit_interleaving(1:sum_matrix2) = de_triangle_matrix1(row, 1:matrix_temp2(row) )';
-            else
-                matrix_temp2(row) = edge_length-row+1;  
-    
-                sum_matrix_delay2 = sum_matrix_delay2 + matrix_temp2(row-1); 
-                sum_matrix2 = sum_matrix2 + matrix_temp2(row);
-                
-                de_y_bit_interleaving(sum_matrix_delay2+1 : sum_matrix2) = de_triangle_matrix1(row , 1:matrix_temp2(row))';
-            end
-        end
-    
-    
-        % 解比特选择
-    
-        if E >= N       % reptiton
-            de_y_bit_chosing = de_y_bit_interleaving(1:N);
-        else
-        end
-    
-        % 解子块交织
-        de_J = zeros(32,L_sub);
-        de_Y_temp1=zeros(32,L_sub);
-        for j = 1 : 32   % 分块
-            de_J(j,:) = de_y_bit_chosing(1+L_sub*(j-1):L_sub*j);
-        end
-    
-        for jj= 1 : 32   % 交织
-            de_Y_temp1(P(jj),:) = de_J(jj,:);
-        end
-        
-        de_Y_temp2 = de_Y_temp1';
-        de_Y_temp3 = de_Y_temp2(:);
-        de_y_sub_inter = de_Y_temp3';
-    
-        %% Ploar Decode-SCL decoder
-        r=de_y_sub_inter;
-        satx = @(x,th) min(max(x,-th),th); %saturate FP value
-        f = @(a,b) (1-2*(a<0)).*(1-2*(b<0)).*min(abs(a),abs(b)); %minsum
-        g = @(a,b,c) b+(1-2*c).*a; %g function
-        
-        %quantization
-        r = satx(r,rmax);
-        rq = round(r/rmax*maxqr);
-    
-        LLR = zeros(nL,n+1,N); %beliefs in nL decoders
-        ucap = zeros(nL,n+1,N); %decisions in nL decoders
-        PML = Inf*ones(nL,1); %Path metrics
-        PML(1) = 0;
-        ns = zeros(1,2*N-1); %node state vector
+        Nbiterrs = 0; Nblkerrs = 0; Nblocks = 50;
+        for blk = 1:Nblocks
+            msg = randi([0 1],1,A); % generate random K-bit message, k is equal to Rb*simulation_time
             
-        LLR(:,1,:) = repmat(rq,nL,1,1); %belief of root
-        DML = zeros(nL,N);
-        PMLL = zeros(nL,N);
-        
-     
-        node = 0; depth = 0; %start at root
-        done = 0; %decoder has finished or not
-        
-        while (done == 0) %traverse till all bits are decoded
-            %leaf or not
-            if depth == n
-                DM = squeeze(LLR(:,n+1,node+1)); %decision metrics
-                DML(:,node+1) = DM;
-                PMLL(:,node+1) = PML;
-                if any(F==(node+1)) %is node frozen
-                    ucap(:,n+1,node+1) = 0; %set all decisions to 0
-                    PML = PML + abs(DM).*(DM < 0); %if DM is negative, add |DM|
-                else
-                    dec = DM < 0; %decisions as per DM
-                    PM2 = [PML; PML+abs(DM)];
-                    [PML, pos] = mink(PM2,nL); %In PM2(:), first nL are as per DM 
-                                                 %next nL are opposite of DM
-                    pos1 = pos > nL; %surviving with opposite of DM: 1, if pos is above nL
-                    pos(pos1) = pos(pos1) - nL; %adjust index
-                    dec = dec(pos); %decision of survivors
-                    dec(pos1) = 1 - dec(pos1); %flip for opposite of DM
-                    LLR = LLR(pos,:,:); %rearrange the decoder states
-                    ucap = ucap(pos,:,:);
-                    ucap(:,n+1,node+1) = dec;
+            [quot,rem] = gfdeconv([zeros(1,crcL) fliplr(msg)],crcg);
+            msgcrc = [msg fliplr([rem zeros(1,crcL-length(rem))])];
+            
+            u = zeros(1,N);
+            u(Q1(N-K+1:end)) = msgcrc; % assign message bits
+            m = 1;                  % number of bits combined
+            
+            for d = n-1:-1:0
+                for i = 1:2*m:N
+                    a = u(i:i+m-1);                 % first part
+                    b = u(i+m:i+2*m-1);             % second part
+                    u(i:i+2*m-1) = [mod(a+b,2) b];  % combining
                 end
-                if node == (N-1)
-                    done = 1;
-                else
-                    node = floor(node/2); depth = depth - 1;
-                end
+                m = m * 2;
+            end
+            
+            
+            %% Ratematching
+            
+            P=[0 1 2 4 3 5 6 7 ....
+                8 16 9 17 10 18 11 19....
+                12 20 13 21 14 22 15 23....
+                24 25 26 28 27 29 30 31]+1; % 块交织矩阵，参考ts_138212v150200 5.4.1节
+            
+            % 子块交织
+            L_sub = N / 32;
+            J = zeros(32,L_sub);
+            Y_temp1=zeros(32,L_sub);
+            for j = 1 : 32   % 分块
+                J(j,:) = u(1+L_sub*(j-1):L_sub*j);
+            end
+            
+            for jj= 1 : 32   % 交织
+                Y_temp1(jj,:) = J(P(jj),:);
+            end
+            Y_temp2 = Y_temp1';
+            Y_temp3 = Y_temp2(:);
+            y_sub_inter = Y_temp3';
+            
+            % 比特选择
+            
+            if E >= N       % reptiton
+                y_bit_chosing = [y_sub_inter y_sub_inter(1:E-N)];
             else
-                %nonleaf
-                npos = (2^depth-1) + node + 1; %position of node in node state vector
-                if ns(npos) == 0 %step L and go to left child
-                    %disp('L')
-                    %disp([node depth])
-                    temp = 2^(n-depth);
-                    Ln = squeeze(LLR(:,depth+1,temp*node+1:temp*(node+1))); %incoming beliefs
-                    a = Ln(:,1:temp/2); b = Ln(:,temp/2+1:end); %split beliefs into 2
-                    node = node *2; depth = depth + 1; %next node: left child
-                    temp = temp / 2; %incoming belief length for left child
-                    LLR(:,depth+1,temp*node+1:temp*(node+1)) = f(a,b); %minsum and storage
-                    ns(npos) = 1;
+                
+            end
+            
+            % 比特交织 45*46/2=1035
+            
+            % 等直角三角形 边长 45
+            edge_length=findNumberOfTerms(E,1,1);
+            % step 1:按行写入
+            triangle_matrix = zeros(edge_length, edge_length);
+            sum_matrix = 0;
+            sum_matrix_delay = 0;
+            
+            for row = 1 : edge_length
+                if row == 1
+                    matrix_temp(1) = edge_length-row+1;
+                    
+                    triangle_matrix(row, 1 : matrix_temp(1)) = y_bit_chosing(1:matrix_temp(1));
+                    
+                    sum_matrix = sum_matrix + matrix_temp(1);
                 else
-                    if ns(npos) == 1 %step R and go to right child
-                        %disp('R')
+                    matrix_temp(row) = edge_length-row+1;
+                    
+                    sum_matrix_delay = sum_matrix_delay + matrix_temp(row-1);
+                    sum_matrix = sum_matrix + matrix_temp(row);
+                    
+                    triangle_matrix(row, 1 : matrix_temp(row)) = y_bit_chosing(1+sum_matrix_delay: sum_matrix);
+                end
+            end
+            
+            % step 2:按列读出
+            
+            sum_matrix2 = 0;
+            sum_matrix_delay2 = 0;
+            for col = 1 : edge_length
+                if col == 1
+                    matrix_temp2(col) = edge_length-col+1;
+                    
+                    sum_matrix2 = sum_matrix2 + matrix_temp2(col);
+                    
+                    y_bit_interleaving(1:sum_matrix2) = triangle_matrix(1:matrix_temp2(col) ,col)';
+                else
+                    matrix_temp2(col) = edge_length-col+1;
+                    
+                    sum_matrix_delay2 = sum_matrix_delay2 + matrix_temp2(col-1);
+                    sum_matrix2 = sum_matrix2 + matrix_temp2(col);
+                    
+                    y_bit_interleaving(sum_matrix_delay2+1 : sum_matrix2) = triangle_matrix(1:matrix_temp2(col) ,col)';
+                end
+            end
+            
+            %% Modulate
+            
+            cword = y_bit_interleaving;
+            if 0==mod(E,2)
+                csword1 = cword ;                     % 1035+1=1036
+            else
+                csword1 = [cword 0];                     % 1035+1=1036
+            end
+            
+            s_conversion = 1 - 2 * csword1;          % QPSK bit to symbol conversion
+            
+            kk = 1;
+            for k = 1 : length(s_conversion)
+                if 0 == mod(k,2)
+                    s_imag(kk) = s_conversion(k);
+                    kk = kk+1;
+                else
+                    s_real(kk) = s_conversion(k);
+                end
+            end
+            
+            
+            %% AWGN Channel
+            %         tra_real = s_real + sigma * randn(1,length( s_real )); % AWGN channel I
+            %         tra_imag = s_imag + sigma * randn(1,length( s_imag )); % AWGN channel I
+            %         tra = tra_real + 1i * tra_imag;
+            %     tra = awgn(s, EbNodB(t), 'measured');
+            %     figure;plot(abs(fft(tra)));
+            
+            % 该信噪比加噪方式有问题！
+            snr(t) =EbNodB(t)+10*log10(2)-10 * log10(1) ;
+            ch3 = awgn(s_real + 1i*s_imag,snr(t),'measured');
+            tra_real = real(ch3);
+            tra_imag = imag(ch3);
+            tra = tra_real + 1i * tra_imag;
+            %% Demodulate
+            
+            temp1 = [tra_real;tra_imag];
+            temp2 = temp1(:);
+            output = temp2';
+            
+            %     figure;plot(output);hold on;plot(s_conversion);title("对比");
+            
+            
+            
+            
+            %% Deratematching
+            
+            if 0==mod(E,2)
+                de_output=output;   % 1036-1 = 1035
+            else
+                de_output=output(1:end-1);   % 1036-1 = 1035
+            end
+            
+            % 解比特交织模块
+            
+            % step 1: 按列写入
+            % 思想：仍跟上述交织模块一样按行写入，然后对结果取个转置即为按列写入
+            de_triangle_matrix = zeros(edge_length, edge_length);
+            sum_matrix = 0;
+            sum_matrix_delay = 0;
+            
+            for row = 1 : edge_length
+                if row == 1
+                    matrix_temp(1) = edge_length-row+1;
+                    
+                    de_triangle_matrix(row, 1 : matrix_temp(1)) = de_output(1:matrix_temp(1));
+                    
+                    sum_matrix = sum_matrix + matrix_temp(1);
+                else
+                    matrix_temp(row) = edge_length-row+1;
+                    
+                    sum_matrix_delay = sum_matrix_delay + matrix_temp(row-1);
+                    sum_matrix = sum_matrix + matrix_temp(row);
+                    
+                    de_triangle_matrix(row, 1 : matrix_temp(row)) = de_output(1+sum_matrix_delay: sum_matrix);
+                end
+            end
+            
+            de_triangle_matrix1 = de_triangle_matrix';
+            
+            % step 2: 按行读出
+            sum_matrix2 = 0;
+            sum_matrix_delay2 = 0;
+            for row = 1 : edge_length
+                if row == 1
+                    matrix_temp2(row) = edge_length-row+1;
+                    
+                    sum_matrix2 = sum_matrix2 + matrix_temp2(row);
+                    
+                    de_y_bit_interleaving(1:sum_matrix2) = de_triangle_matrix1(row, 1:matrix_temp2(row) )';
+                else
+                    matrix_temp2(row) = edge_length-row+1;
+                    
+                    sum_matrix_delay2 = sum_matrix_delay2 + matrix_temp2(row-1);
+                    sum_matrix2 = sum_matrix2 + matrix_temp2(row);
+                    
+                    de_y_bit_interleaving(sum_matrix_delay2+1 : sum_matrix2) = de_triangle_matrix1(row , 1:matrix_temp2(row))';
+                end
+            end
+            
+            
+            % 解比特选择
+            
+            if E >= N       % reptiton
+                de_y_bit_chosing = de_y_bit_interleaving(1:N);
+            else
+            end
+            
+            % 解子块交织
+            de_J = zeros(32,L_sub);
+            de_Y_temp1=zeros(32,L_sub);
+            for j = 1 : 32   % 分块
+                de_J(j,:) = de_y_bit_chosing(1+L_sub*(j-1):L_sub*j);
+            end
+            
+            for jj= 1 : 32   % 交织
+                de_Y_temp1(P(jj),:) = de_J(jj,:);
+            end
+            
+            de_Y_temp2 = de_Y_temp1';
+            de_Y_temp3 = de_Y_temp2(:);
+            de_y_sub_inter = de_Y_temp3';
+            
+            %% Ploar Decode-SCL decoder
+            r=de_y_sub_inter;
+            satx = @(x,th) min(max(x,-th),th); %saturate FP value
+            f = @(a,b) (1-2*(a<0)).*(1-2*(b<0)).*min(abs(a),abs(b)); %minsum
+            g = @(a,b,c) b+(1-2*c).*a; %g function
+            
+            %quantization
+            r = satx(r,rmax);
+            rq = round(r/rmax*maxqr);
+            
+            LLR = zeros(nL,n+1,N); %beliefs in nL decoders
+            ucap = zeros(nL,n+1,N); %decisions in nL decoders
+            PML = Inf*ones(nL,1); %Path metrics
+            PML(1) = 0;
+            ns = zeros(1,2*N-1); %node state vector
+            
+            LLR(:,1,:) = repmat(rq,nL,1,1); %belief of root
+            DML = zeros(nL,N);
+            PMLL = zeros(nL,N);
+            
+            
+            node = 0; depth = 0; %start at root
+            done = 0; %decoder has finished or not
+            
+            while (done == 0) %traverse till all bits are decoded
+                %leaf or not
+                if depth == n
+                    DM = squeeze(LLR(:,n+1,node+1)); %decision metrics
+                    DML(:,node+1) = DM;
+                    PMLL(:,node+1) = PML;
+                    if any(F==(node+1)) %is node frozen
+                        ucap(:,n+1,node+1) = 0; %set all decisions to 0
+                        PML = PML + abs(DM).*(DM < 0); %if DM is negative, add |DM|
+                    else
+                        dec = DM < 0; %decisions as per DM
+                        PM2 = [PML; PML+abs(DM)];
+                        [PML, pos] = mink(PM2,nL); %In PM2(:), first nL are as per DM
+                        %next nL are opposite of DM
+                        pos1 = pos > nL; %surviving with opposite of DM: 1, if pos is above nL
+                        pos(pos1) = pos(pos1) - nL; %adjust index
+                        dec = dec(pos); %decision of survivors
+                        dec(pos1) = 1 - dec(pos1); %flip for opposite of DM
+                        LLR = LLR(pos,:,:); %rearrange the decoder states
+                        ucap = ucap(pos,:,:);
+                        ucap(:,n+1,node+1) = dec;
+                    end
+                    if node == (N-1)
+                        done = 1;
+                    else
+                        node = floor(node/2); depth = depth - 1;
+                    end
+                else
+                    %nonleaf
+                    npos = (2^depth-1) + node + 1; %position of node in node state vector
+                    if ns(npos) == 0 %step L and go to left child
+                        %disp('L')
                         %disp([node depth])
                         temp = 2^(n-depth);
                         Ln = squeeze(LLR(:,depth+1,temp*node+1:temp*(node+1))); %incoming beliefs
                         a = Ln(:,1:temp/2); b = Ln(:,temp/2+1:end); %split beliefs into 2
-                        lnode = 2*node; ldepth = depth + 1; %left child
-                        ltemp = temp/2;
-                        ucapn = squeeze(ucap(:,ldepth+1,ltemp*lnode+1:ltemp*(lnode+1))); %incoming decisions from left child
-                        node = node *2 + 1; depth = depth + 1; %next node: right child
-                        temp = temp / 2; %incoming belief length for right child
-                        LLR(:,depth+1,temp*node+1:temp*(node+1)) = g(a,b,ucapn); %g and storage
-                        ns(npos) = 2;
-                    else %step U and go to parent
-                        temp = 2^(n-depth);
-                        lnode = 2*node; rnode = 2*node + 1; cdepth = depth + 1; %left and right child
-                        ctemp = temp/2;
-                        ucapl = squeeze(ucap(:,cdepth+1,ctemp*lnode+1:ctemp*(lnode+1))); %incoming decisions from left child
-                        ucapr = squeeze(ucap(:,cdepth+1,ctemp*rnode+1:ctemp*(rnode+1))); %incoming decisions from right child
-                        ucap(:,depth+1,temp*node+1:temp*(node+1)) = [mod(ucapl+ucapr,2) ucapr]; %combine
-                        node = floor(node/2); depth = depth - 1;
+                        node = node *2; depth = depth + 1; %next node: left child
+                        temp = temp / 2; %incoming belief length for left child
+                        LLR(:,depth+1,temp*node+1:temp*(node+1)) = f(a,b); %minsum and storage
+                        ns(npos) = 1;
+                    else
+                        if ns(npos) == 1 %step R and go to right child
+                            %disp('R')
+                            %disp([node depth])
+                            temp = 2^(n-depth);
+                            Ln = squeeze(LLR(:,depth+1,temp*node+1:temp*(node+1))); %incoming beliefs
+                            a = Ln(:,1:temp/2); b = Ln(:,temp/2+1:end); %split beliefs into 2
+                            lnode = 2*node; ldepth = depth + 1; %left child
+                            ltemp = temp/2;
+                            ucapn = squeeze(ucap(:,ldepth+1,ltemp*lnode+1:ltemp*(lnode+1))); %incoming decisions from left child
+                            node = node *2 + 1; depth = depth + 1; %next node: right child
+                            temp = temp / 2; %incoming belief length for right child
+                            LLR(:,depth+1,temp*node+1:temp*(node+1)) = g(a,b,ucapn); %g and storage
+                            ns(npos) = 2;
+                        else %step U and go to parent
+                            temp = 2^(n-depth);
+                            lnode = 2*node; rnode = 2*node + 1; cdepth = depth + 1; %left and right child
+                            ctemp = temp/2;
+                            ucapl = squeeze(ucap(:,cdepth+1,ctemp*lnode+1:ctemp*(lnode+1))); %incoming decisions from left child
+                            ucapr = squeeze(ucap(:,cdepth+1,ctemp*rnode+1:ctemp*(rnode+1))); %incoming decisions from right child
+                            ucap(:,depth+1,temp*node+1:temp*(node+1)) = [mod(ucapl+ucapr,2) ucapr]; %combine
+                            node = floor(node/2); depth = depth - 1;
+                        end
                     end
                 end
             end
-        end
-    
-        % check CRC
-        
-        msg_capl = squeeze(ucap(:,n+1,Q1(N-K+1:end))); %get candidate messages
-        
-        cout = 1; %candidate codeword to be outputted, initially set to best PM
-        
-        for c1 = 1:nL
-            [q1,r1] = gfdeconv(fliplr(msg_capl(c1,:)),crcg);
-            if isequal(r1,0) %check if CRC passes
-                cout = c1;
-                break
+            
+            % check CRC
+            
+            msg_capl = squeeze(ucap(:,n+1,Q1(N-K+1:end))); %get candidate messages
+            
+            cout = 1; %candidate codeword to be outputted, initially set to best PM
+            
+            for c1 = 1:nL
+                [q1,r1] = gfdeconv(fliplr(msg_capl(c1,:)),crcg);
+                if isequal(r1,0) %check if CRC passes
+                    cout = c1;
+                    break
+                end
             end
-        end
-        msg_cap = msg_capl(cout,1:A);
+            msg_cap = msg_capl(cout,1:A);
+            
+            %     figure; plot(msg_cap*1.2);hold on; plot(msg);title("decode");
+            
+            %Counting errors
+            
+            Nerrs = sum(msg ~= msg_cap);
+            
+            if Nerrs > 0
+                Nbiterrs = Nbiterrs + Nerrs;    % 总误比特数
+                Nblkerrs = Nblkerrs + 1;        % 总误块数
+            end
+            
+        end % for blk=1:Nblocks
+        Nbiterrs1(kkkkk,t) = Nbiterrs;
+        Nblkerrs1(kkkkk,t) = Nblkerrs;
+        BER_sim(kkkkk,t) = Nbiterrs/K/Nblocks;
+        FER_sim(kkkkk,t) = Nblkerrs/Nblocks;
+        disp([EbNodB(t)    FER_sim(kkkkk,t)     BER_sim(kkkkk,t)     Nblkerrs1(kkkkk,t)    Nbiterrs1(kkkkk,t)    Nblocks]);
         
-    %     figure; plot(msg_cap*1.2);hold on; plot(msg);title("decode");
-        
-        %Counting errors
-        
-        Nerrs = sum(msg ~= msg_cap);
-        
-        if Nerrs > 0       
-            Nbiterrs = Nbiterrs + Nerrs;    % 总误比特数      
-            Nblkerrs = Nblkerrs + 1;        % 总误块数       
-        end
-        
-    end
-    Nbiterrs1(kkkkk,t) = Nbiterrs;
-    Nblkerrs1(kkkkk,t) = Nblkerrs;
-    BER_sim(kkkkk,t) = Nbiterrs/K/Nblocks;
-    FER_sim(kkkkk,t) = Nblkerrs/Nblocks;
-    disp([EbNodB(t)    FER_sim(kkkkk,t)     BER_sim(kkkkk,t)     Nblkerrs1(kkkkk,t)    Nbiterrs1(kkkkk,t)    Nblocks]);	
-
-end
-
-end
+    end% for t=1:IE
+    
+end %for kkkkk = 1:length(NAE_temp)
 %% result 
-figure;
-% semilogy(EbNodB,BER_sim,'*');grid on;
-plot(EbNodB,BER_sim,'-ko');grid on;
-%legend('SC','SCL(32)','SCL-AD-CRC','SCL-CRC(32)','SCL-AD-CRC(LA)','SCL-CRC(32,LA)')
-title('BLER performance')
-xlabel('Eb/No');
-ylabel('BER')
 
 % save BER_sim.mat BER_sim;
 % save FER_sim.mat FER_sim;
+
+figure;
+for ttt=1:length(NAE_temp)
+    
+    semilogy(EbNodB,BER_sim(ttt,:),'-o');grid on;
+%     plot(EbNodB,BER_sim,'-ko');grid on;
+    hold on;
+end
+%  5 21 53 117 245 501  
+legend('A=5','A=21','A=53','A=117','A=245','A=501');
+title('信息码长固定前提下的BLER performance')
+xlabel('Eb/No');
+ylabel('BER')
+
+figure;
+for ttt=1:length(NAE_temp)
+    
+%     semilogy(EbNodB,BER_sim(ttt,:),'-*');grid on;
+    plot(EbNodB,BER_sim(ttt,:),'-o');grid on;
+    hold on;
+end
+%  5 21 53 117 245 501  
+legend('A=5','A=21','A=53','A=117','A=245','A=501');
+title('信息码长固定前提下的BLER performance')
+xlabel('Eb/No');
+ylabel('BER')
+
+

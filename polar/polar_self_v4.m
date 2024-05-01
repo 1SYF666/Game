@@ -62,6 +62,7 @@ NAE_temp = [32 64 128 256 512 1024;
 Rate_temp =[3/4 9/16 1/2 7/16 1/4 1/8];
 A_temp = [757 565 501 437 245 117];
 % ********* 测试码率不同的情况下的误码率  *********%
+
 flag = 1;  % 测试标志位
 
 for kkkkk=1:length(NAE_temp)
@@ -237,18 +238,20 @@ for kkkkk=1:length(NAE_temp)
             
             
             %% AWGN Channel
-            %         tra_real = s_real + sigma * randn(1,length( s_real )); % AWGN channel I
-            %         tra_imag = s_imag + sigma * randn(1,length( s_imag )); % AWGN channel I
-            %         tra = tra_real + 1i * tra_imag;
-            %     tra = awgn(s, EbNodB(t), 'measured');
+            tra_real = s_real + sigma * randn(1,length( s_real )); % AWGN channel I
+            tra_imag = s_imag + sigma * randn(1,length( s_imag )); % AWGN channel I
+            tra = tra_real + 1i * tra_imag;
+            tra = awgn(tra, EbNodB(t), 'measured');
             %     figure;plot(abs(fft(tra)));
             
-            % 该信噪比加噪方式有问题！
-            snr(t) =EbNodB(t)+10*log10(2)-10 * log10(1) ;
-            ch3 = awgn(s_real + 1i*s_imag,snr(t),'measured');
-            tra_real = real(ch3);
-            tra_imag = imag(ch3);
-            tra = tra_real + 1i * tra_imag;
+%             % 该信噪比加噪方式有问题！
+              % 因为运行这段加噪函数，误码率全是0，显然不对。
+              % 目前不知道该如何使用AWGN函数如何正确加噪
+%             snr(t) =EbNodB(t)+10*log10(2)-10 * log10(1) ;
+%             ch3 = awgn(s_real + 1i*s_imag,snr(t),'measured');
+%             tra_real = real(ch3);
+%             tra_imag = imag(ch3);
+%             tra = tra_real + 1i * tra_imag;
             %% Demodulate
             
             temp1 = [tra_real;tra_imag];
@@ -256,9 +259,6 @@ for kkkkk=1:length(NAE_temp)
             output = temp2';
             
             %     figure;plot(output);hold on;plot(s_conversion);title("对比");
-            
-            
-            
             
             %% Deratematching
             

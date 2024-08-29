@@ -114,14 +114,63 @@ end
 de_phi = de_phi-mean(de_phi);
 figure;plot(de_phi);
 
+s11 = send_signal;
+Signal_Channel_1=s11;
+Simulation_Length_1=length(s11);
+%以下为锁相环处理过程
+Signal_PLL_1=zeros(1,Simulation_Length_1);
+NCO_Phase_1 =zeros(1,Simulation_Length_1);
+Discriminator_Out_1=zeros(1,Simulation_Length_1);
+Freq_Control_1=zeros(1,Simulation_Length_1);
+PLL_Phase_Part_1=zeros(1,Simulation_Length_1);
+PLL_Freq_Part_1=zeros(1,Simulation_Length_1);
+I_PLL_1=zeros(1,Simulation_Length_1);
+Q_PLL_1=zeros(1,Simulation_Length_1);
+
+sigma = 0.707;
+fs_nco = fs;
+
+for i = 1 : Simulation_Length_1
+    if i<500
+        coefficient_temp=0.001;
+        BL(i)=coefficient_temp*Rb;
+    else
+        coefficient_temp=0.001;
+        BL(i)=coefficient_temp*Rb;
+    end
+    Wn=8*sigma*BL(i)/(1+4*sigma^2);     T_nco=1/fs_nco; % T_nco应该是采样周期
+    K1(i)=(2*sigma*Wn*T_nco);
+    K2(i)=((T_nco*Wn)^2);
+end
+for i=2:Simulation_Length_1
+    Signal_PLL_1(i)=Signal_Channel_1(i)*exp(-1i*(NCO_Phase_1(i-1)));  %下变频?
+    I_PLL_1(i)=real(Signal_PLL_1(i));  %读取同相和正交之路的数据
+    Q_PLL_1(i)=imag(Signal_PLL_1(i));
+    Discriminator_Out_1(i) =atan2(Q_PLL_1(i),I_PLL_1(i));
+    PLL_Phase_Part_1(i)=Discriminator_Out_1(i)*K1(i);
+    PLL_Freq_Part_1(i)=Discriminator_Out_1(i)*K2(i)+PLL_Freq_Part_1(i-1);
+    Freq_Control_1(i)=PLL_Phase_Part_1(i)+PLL_Freq_Part_1(i);
+    NCO_Phase_1(i)=NCO_Phase_1(i-1)+Freq_Control_1(i)*2*pi;
+end
+figure;plot(PLL_Freq_Part_1);title("频率跟踪曲线");
+figure;plot(Discriminator_Out_1);title("鉴相输出");
+
+
+len_temp = length(Discriminator_Out_1);
+for i = len_temp:-1:2
+    de_phi2(i-1) = Discriminator_Out_1(i)-Discriminator_Out_1(i-1);
+end
+figure;plot(de_phi2);title("成型之后信息波形");
+figure;plot(abs(fft(abs(de_phi2(1:end)))));title("成型之后信息波形频谱");
 
 
 
 %% 码速率估计
 nfft  = 16384*4;
 M =  2;
-s_envalop = de_phi.*conj(de_phi);
-s_temp = diff(s_envalop);
+s_envalop = de_phi2.*conj(de_phi2);
+% s_temp = diff(s_envalop);
+s_temp = s_envalop;
 fft_temp = abs(fft(s_temp,nfft));
 fft_temp(1:20) = 0;     % 消除干扰
 half_fft_temp = fft_temp(1:nfft/2); 

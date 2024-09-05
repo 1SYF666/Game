@@ -29,12 +29,12 @@ t = 0: Ts :time-Ts;
 % Generate random binary data
 % data = randi([0, 1], 1, symbolnum);
 load data.mat;
-
+data_base = 2*data - 1; 
 % 差分编码
 b_data = zeros(1, symbolnum);
 b_data(1) = data(1);
 for i = 2 : symbolnum
-    b_data(i) = xor(data(i), data(i-1));
+    b_data(i) = xor(b_data(i-1), data(i));
 end
 b_data = 2*b_data - 1; % 将比特序列映射到{-1, 1}
 
@@ -100,19 +100,47 @@ de_s_out = de_s_out1(:)';
 figure; plot(de_s_out); hold on; plot(0.9*b_data); title("最佳接收输出后波形与底码对比");
 
 %% MSK信号信号差分数字解调
+receiver = msk_signal;
+s_re = real(receiver);
+s_im = imag(receiver);
+s_orignal = s_re - s_im; 
 
+I_dem = s_orignal.* cos(2*pi*fc*t);
+Q_dem = s_orignal.* sin(2*pi*fc*t);
 
+% 低通滤波
+% y_filter = lowpass(y, fc, fs);       % 低通滤波器 
+hai = 3.3;                             %海明窗窗过度带宽系数
+wp = 0.26*pi;                          %通带截止频率 wp < fc/(2*fs)     
+ws = 0.3*pi;                           %阻带起始频率 ws > fc/(2*fs)
+wdlta = ws-wp;
+N_lp = ceil(2*pi*hai/wdlta);           %求滤波器阶数N_lp
+Wc = (wp+ws)/2;
+b = fir1(N_lp-1,Wc/pi,hamming(N_lp));
+s_re_filter = filter(b,1,I_dem);
+s_im_filter = filter(b,1,Q_dem);
 
+% ***** 未抽取 *****
+s_re_filter1 = s_re_filter(length(b)/2-15:end);
+s_im_filter1 = s_im_filter(length(b)/2-15:end);
+% 延迟相乘
+minlength = min(length(s_re_filter1),length(s_im_filter1));
+for i = 1 : minlength-1
+    Y1(i) = s_re_filter1(i)*s_im_filter1(i+1)-s_im_filter1(i)*s_re_filter1(i+1);
+end
+ak = data_base;
+for i = 1 : length(ak)
+    base_data(1+sps*(i-1)) = ak(i);
+    base_data(2+sps*(i-1):sps*i) = ak(i);
+end
+figure; plot(Y1); hold on; plot(0.023*base_data);title("差分检测输出波形与底码对比图-未抽取");
 
-
-
-
-
-
-
-
-
-
-
-
-
+% ***** 已抽取 *****
+s_re_filter = s_re_filter(length(b)/2-15:sps:end);
+s_im_filter = s_im_filter(length(b)/2-15:sps:end);
+% 延迟相乘
+minlength = min(length(s_re_filter),length(s_im_filter));
+for i = 1 : minlength-1
+    Y(i) = s_re_filter(i)*s_im_filter(i+1)-s_im_filter(i)*s_re_filter(i+1);
+end
+figure;plot(Y);hold on; plot(0.2*data_base);title("差分数字解调输出波形与底码对比-已抽取");

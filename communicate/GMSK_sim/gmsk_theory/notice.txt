@@ -1,0 +1,5 @@
+注意：
+一、gmsk_theory_sim_v1
+    1.可以运行、代码粗糙、同步代码和解旋代码还需要修改；
+    2.调制GMSK_Mod(parameter1,parameter2,parameter3,parameter4);
+      paramter1传入时是脉冲编码之后，函数里面又有个脉冲编码，不合理。

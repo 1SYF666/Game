@@ -9,9 +9,9 @@ clc;clear;
 close all;
 j = sqrt(-1);
 %% 基本参数
-% Rb = 50e3;
-Rb = 1625*1e3/6;
-fc = 40;
+Rb = 50e3;
+% Rb = 1625*1e3/6;
+fc = 10;
 sps = 4;
 fs = sps * Rb;
 Ts = 1 / fs;
@@ -19,7 +19,7 @@ Tb = 1 / Rb;
 EbN0 = 22;
 DEBUG = 0;
 %% 8PSK调制
-base_bit = load('C:\Users\PC\Desktop\postgraduate\others\东方通信\8psk_dongfang\psk8_signal\50K.txt');
+base_bit = load('.\50K.txt');
 [s,si,base_symbol] = pskmod(base_bit);
 %% 成型滤波
 s_real = real(s);
@@ -66,6 +66,11 @@ t = (0:length(send)-1)*Ts;
 send = send.*exp(1i*2*pi*fc*t);
 send_signal = awgnself(send,noise,EbN0,sps);
 
+%% 频偏估计模块
+estimatefcsignal = send_signal(1:length(s_rcos));
+[fcest] = estimate_frebias(estimatefcsignal,Rb,fs);
+fprintf("设置频偏%.3f   估计频偏%.3f    频偏估计误差%.4f\n",fc,fcest,(fcest-fc)/fc);
+send_signal = send_signal.*exp(-1i*2*pi*fcest*t);
 %% 8PSK解调
 receive = send_signal;
 
@@ -80,7 +85,7 @@ posA = [];
 maxPosA = [];
 posArraryA = [];
 framestart = 208+4+50; % 根据8PSK帧结构而定
-for i = 1 : 5
+for i = 1 : length(headframe)
     framesignal = [];
     framesignal = receive_rcos(headframe(i):tailframe(i));
 

@@ -21,23 +21,23 @@ int main()
 	memset(&sockAddr, 0, sizeof(sockAddr));
 	
 	sockAddr.sin_family = AF_INET;
-	sockAddr.sin_addr.s_addr = inet_addr("10.249.102.188");
+	sockAddr.sin_addr.s_addr = inet_addr("192.168.137.41");
 	sockAddr.sin_port = htons(1234);
 	errif(connect(sock, (SOCKADDR*)&sockAddr, sizeof(SOCKADDR))== SOCKET_ERROR,"Failed to connect to client!");
 	printf("Server socket bind successful\n");
 
 
 	while(true){
-        char buf[BUFFER_SIZE];
-        memset(buf, 0x00,sizeof(buf));
-		std::cin>>buf;
-        ssize_t write_bytes = send(sock, buf, sizeof(buf),NULL);
+        char buf[BUFFER_SIZE]={"hello world"};
+        // memset(buf, 0x00,sizeof(buf));
+		//std::cin>>buf;
+        int write_bytes = send(sock, buf, sizeof(buf),0);
         if(write_bytes == -1){
             printf("socket already disconnected, can't write any more!\n");
             break;
         }
         memset(buf, 0x00,sizeof(buf));
-        ssize_t read_bytes = recv(sock, buf, sizeof(buf),NULL);
+        int read_bytes = recv(sock, buf, sizeof(buf),0);
         if(read_bytes > 0){
             printf("message from server: %s\n", buf);
         }else if(read_bytes == 0){

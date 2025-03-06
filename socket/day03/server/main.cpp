@@ -30,7 +30,7 @@ int main()
 	struct sockaddr_in sockAddr;
 	memset(&sockAddr, 0, sizeof(sockAddr));
 	sockAddr.sin_family = AF_INET;
-	sockAddr.sin_addr.s_addr = inet_addr("10.249.102.188");
+	sockAddr.sin_addr.s_addr = inet_addr("192.168.137.41");
 	sockAddr.sin_port = htons(1234);
 	errif(bind(servSock, (SOCKADDR*)&sockAddr, sizeof(sockAddr)) == SOCKET_ERROR, "Socket bind failed!");
 	
@@ -59,14 +59,20 @@ int main()
 		fd_set tempfds = readfds;
 		// wait for events on the socket using select
 		int activity = select(0,&tempfds,nullptr,nullptr,&timeout);
-		errif(activity == SOCKET_ERROR,"Select call failed");
-
+		//errif(activity == SOCKET_ERROR,"Select call failed");
+		
+		if(activity == SOCKET_ERROR)
+		{
+			std::cout<<"Select call failed"<<std::endl;
+			break;
+		}
+		//std::cout<<activity<<std::endl;
 		if (activity == 0)
 		{
 			std::cout<<"Timeout: No events occurred"<<std::endl;
 			continue;
 		}
-
+		
 		// 监听到新的客户端连接
 		if (FD_ISSET(servSock,&tempfds))
 		{
@@ -94,7 +100,7 @@ int main()
 		}
 		
 		// 处理所有可读的客户端套接字
-		for (int i = 0; i < FD_SETSIZE; ++i)
+		for (int i = 1; i < readfds.fd_count; ++i)
 		{
 			SOCKET clntSock =  readfds.fd_array[i];
 			if (FD_ISSET(clntSock,&tempfds))
@@ -102,21 +108,33 @@ int main()
 				/* code */
 				char buf[READ_BUFFER];
 				memset(buf,0x00,sizeof(buf));
-				ssize_t read_bytes = recv(clntSock,buf,sizeof(buf),NULL);
+				int read_bytes = recv(clntSock,buf,sizeof(buf),0);
+				//std::cout<<read_bytes<<std::endl;
 
 				if (read_bytes>0)
 				{
 					std::cout<<"Message from client "<<clntSock<<":"<<buf<<std::endl;
-					send(clntSock,buf,read_bytes,NULL); // 回显客户端消息
+					send(clntSock,buf,read_bytes,0); // 回显客户端消息
 				}else if(read_bytes == 0)
 				{
 					std::cout<<"EOF,client fd "<<clntSock<<" disconnect"<<std::endl;
 					closesocket(clntSock);
 					FD_CLR(clntSock,&readfds);      // 从集合中移除该客户端
 				}
+				else if (read_bytes == -1)
+				{
+					// 客户端正常中断，继续读取
+					std::cout<<"EOF,client fd "<<clntSock<<" disconnect"<<std::endl;
+					closesocket(clntSock);
+					FD_CLR(clntSock,&readfds);      // 从集合中移除该客户端
+					continue;
+				}
 				else if (read_bytes == -1 && (errno == EINTR))
 				{
 					// 客户端正常中断，继续读取
+					std::cout<<"EOF,client fd "<<clntSock<<" disconnect"<<std::endl;
+					closesocket(clntSock);
+					FD_CLR(clntSock,&readfds);      // 从集合中移除该客户端
 					continue;
 				}
 				else if (read_bytes == -1 &&(errno == EAGAIN||errno == EWOULDBLOCK))

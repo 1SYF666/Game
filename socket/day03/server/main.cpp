@@ -132,9 +132,6 @@ int main()
 				else if (read_bytes == -1 && (errno == EINTR))
 				{
 					// 客户端正常中断，继续读取
-					std::cout<<"EOF,client fd "<<clntSock<<" disconnect"<<std::endl;
-					closesocket(clntSock);
-					FD_CLR(clntSock,&readfds);      // 从集合中移除该客户端
 					continue;
 				}
 				else if (read_bytes == -1 &&(errno == EAGAIN||errno == EWOULDBLOCK))

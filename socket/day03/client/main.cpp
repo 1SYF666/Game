@@ -25,29 +25,31 @@ int main()
 	sockAddr.sin_port = htons(1234);
 	errif(connect(sock, (SOCKADDR*)&sockAddr, sizeof(SOCKADDR))== SOCKET_ERROR,"Failed to connect to client!");
 	printf("Server socket bind successful\n");
-
-
-	while(true){
-        char buf[BUFFER_SIZE]={"hello world"};
-        // memset(buf, 0x00,sizeof(buf));
-		//std::cin>>buf;
-        int write_bytes = send(sock, buf, sizeof(buf),0);
-        if(write_bytes == -1){
-            printf("socket already disconnected, can't write any more!\n");
-            break;
-        }
-        memset(buf, 0x00,sizeof(buf));
-        int read_bytes = recv(sock, buf, sizeof(buf),0);
-        if(read_bytes > 0){
-            printf("message from server: %s\n", buf);
-        }else if(read_bytes == 0){
-            printf("server socket disconnected!\n");
-            break;
-        }else if(read_bytes == -1){
-            closesocket(sock);
-            errif(true, "socket read error");
-        }
-    }
+	int count = 0;
+	while (true) {
+		char buf[BUFFER_SIZE] ;
+		memset(buf, 0x00,sizeof(buf));
+		snprintf(buf, sizeof(buf), "%d", count++);
+		int write_bytes = send(sock, buf, strlen(buf), 0);
+		if (write_bytes == -1) {
+			printf("socket already disconnected, can't write any more!\n");
+			break;
+		}
+		memset(buf, 0x00, sizeof(buf));
+		int read_bytes = recv(sock, buf, sizeof(buf), 0);
+		if (read_bytes > 0) {
+			printf("message from server: %s\n", buf);
+		}
+		else if (read_bytes == 0) {
+			printf("server socket disconnected!\n");
+			break;
+		}
+		else if (read_bytes == -1) {
+			closesocket(sock);
+			errif(true, "socket read error");
+		}
+		Sleep(500); // 休眠 0.5 秒
+	}
 
 
 	// 关闭套接字

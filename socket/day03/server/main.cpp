@@ -58,18 +58,18 @@ int main()
 	{
 		fd_set tempfds = readfds;
 		// wait for events on the socket using select
-		int activity = select(0,&tempfds,nullptr,nullptr,&timeout);
-		//errif(activity == SOCKET_ERROR,"Select call failed");
-		
-		if(activity == SOCKET_ERROR)
+		int activity = select(0, &tempfds, nullptr, nullptr, &timeout);
+		errif(activity == SOCKET_ERROR,"Select call failed");
+
+		if (activity == SOCKET_ERROR)
 		{
-			std::cout<<"Select call failed"<<std::endl;
+			printf("Select call failed\n");
 			break;
 		}
 		//std::cout<<activity<<std::endl;
 		if (activity == 0)
 		{
-			std::cout<<"Timeout: No events occurred"<<std::endl;
+			printf("Timeout: No events occurred\n");
 			continue;
 		}
 		
@@ -95,7 +95,7 @@ int main()
 			setnonblocking(clntSock);
 
 			// 将新客户端添加到监听集合
-			FD_SET(clntSock,&readfds);
+			FD_SET(clntSock, &readfds);
 
 		}
 		
@@ -105,26 +105,25 @@ int main()
 			SOCKET clntSock =  readfds.fd_array[i];
 			if (FD_ISSET(clntSock,&tempfds))
 			{
-				/* code */
 				char buf[READ_BUFFER];
-				memset(buf,0x00,sizeof(buf));
-				int read_bytes = recv(clntSock,buf,sizeof(buf),0);
-				//std::cout<<read_bytes<<std::endl;
+				memset(buf, 0x00, sizeof(buf));
+				int read_bytes = recv(clntSock, buf, sizeof(buf), 0);
 
 				if (read_bytes>0)
 				{
-					std::cout<<"Message from client "<<clntSock<<":"<<buf<<std::endl;
-					send(clntSock,buf,read_bytes,0); // 回显客户端消息
-				}else if(read_bytes == 0)
+					printf("Message from client %d : %s\n", clntSock,buf);
+					send(clntSock, buf, read_bytes, 0); // 回显客户端消息
+				}
+				else if (read_bytes == 0)
 				{
-					std::cout<<"EOF,client fd "<<clntSock<<" disconnect"<<std::endl;
+					printf("EOF,client fd %d isconnect\n", clntSock);
 					closesocket(clntSock);
 					FD_CLR(clntSock,&readfds);      // 从集合中移除该客户端
 				}
 				else if (read_bytes == -1)
 				{
 					// 客户端正常中断，继续读取
-					std::cout<<"EOF,client fd "<<clntSock<<" disconnect"<<std::endl;
+					printf("EOF,client fd %d isconnect\n", clntSock);
 					closesocket(clntSock);
 					FD_CLR(clntSock,&readfds);      // 从集合中移除该客户端
 					continue;
